@@ -35,7 +35,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}/parent/status', 'update');
             Route::post('/parent', 'store');
             Route::post('/sub-parent', 'storeSubParent');
-            Route::post('/child', 'storeChild');
+            // Route::post('/child', 'storeChild');
         });
      });
 });
