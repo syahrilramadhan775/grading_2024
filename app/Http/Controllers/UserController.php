@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\consumeMessage;
-use App\Models\Project;
 use App\Models\User;
 use App\Services\rabbitMQServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
-use App\Events\SendMessageEvent;
 use App\Models\Gender;
 use App\Models\Roles;
 use Illuminate\Support\Str;
@@ -19,9 +16,7 @@ class UserController extends Controller
     private $data;
 
     public function listener()
-    {
-        return view('users');
-    }
+    { return view('users'); }
 
     /**
      * Display a listing of the resource.
@@ -34,6 +29,7 @@ class UserController extends Controller
             $this->data['name'] = $q->name;
             $this->data['gender'] = $q->genderType->name;
             $this->data['role'] = $q->rolesType->name;
+
             return $this->data;
         });
 
@@ -65,6 +61,7 @@ class UserController extends Controller
             $this->data['name'] = $q->name;
             $this->data['gender'] = $q->genderType->name;
             $this->data['role'] = $q->rolesType->name;
+
             return $this->data;
         });
 
@@ -73,10 +70,7 @@ class UserController extends Controller
         $rabbitMQServices = new rabbitMQServices();
         $rabbitMQServices->sendMessages('users_collection', $users);
 
-        return response()->json([
-            'status' => 201,
-            'data' => $user
-        ], 201);
+        return $user;
     }
 
     /**
@@ -114,16 +108,12 @@ class UserController extends Controller
             $rabbitMQServices = new rabbitMQServices();
             $rabbitMQServices->sendMessages('users_collection', $users);
 
-            return response()->json([
-                'status' => 200,
-                'data' => [
+            return [
                     'id' =>  $user->id,
                     'username' =>  $user->username,
                     'name' =>  $user->name,
                     'gender' =>  $user->genderType->name,
-                    'role' =>  $user->rolesType->name
-                ]
-            ], 200);
+                    'role' =>  $user->rolesType->name ];
         }
     }
 

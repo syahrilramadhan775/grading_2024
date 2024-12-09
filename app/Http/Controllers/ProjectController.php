@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\SendMessageEvent;
 use App\Models\Project;
 use App\Services\rabbitMQServices;
 use Illuminate\Http\Request;
@@ -13,9 +12,7 @@ class ProjectController extends Controller
 {
 
     public function listener()
-    {
-        return view('projects');
-    }
+    { return view('projects'); }
     /**
      * Display a listing of the resource.
      */
@@ -41,14 +38,11 @@ class ProjectController extends Controller
 
         Redis::flushDB();
 
-        $projects = Project::orderBy('id', 'asc')->get(['id', 'name']);
+        $project = Project::orderBy('id', 'asc')->get(['id','name']);
         $rabbitMQServices = new rabbitMQServices();
-        $rabbitMQServices->sendMessages('projects_collection', $projects);
+        $rabbitMQServices->sendMessages('projects_collection', $this->index());
 
-        return response()->json([
-            'id' => $project->id,
-            'name' => $project->name
-        ], 201);
+        return $project;
     }
 
     /**
@@ -72,14 +66,11 @@ class ProjectController extends Controller
 
             Redis::flushDB();
 
-            $projects = Project::orderBy('id', 'asc')->get(['id', 'name']);
+            $project = Project::orderBy('id', 'asc')->get(['id','name']);
             $rabbitMQServices = new rabbitMQServices();
-            $rabbitMQServices->sendMessages('projects_collection', $projects);
+            $rabbitMQServices->sendMessages('projects_collection', $project);
 
-            return response()->json([
-                'id' => $project->id,
-                'name' => $project->name
-            ], 200);
+            return $project;
         }
     }
 
@@ -95,11 +86,11 @@ class ProjectController extends Controller
 
             Redis::flushDB();
 
-            $projects = Project::orderBy('id', 'asc')->get(['id', 'name']);
+            $project = Project::orderBy('id', 'asc')->get(['id','name']);
             $rabbitMQServices = new rabbitMQServices();
-            $rabbitMQServices->sendMessages('projects_collection', $projects);
+            $rabbitMQServices->sendMessages('projects_collection', $project);
 
-            return $projects;
+            return $project;
         }
     }
 }
