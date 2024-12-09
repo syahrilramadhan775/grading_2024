@@ -18,12 +18,11 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'username',
         'name',
-        'email',
-        'password',
-        'role',
-        'project_id',
-        'gender'
+        'gender_id',
+        'roles_id',
+        'password'
     ];
 
     /**
@@ -33,7 +32,6 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        'remember_token',
         'created_at',
         'updated_at'
     ];
@@ -43,12 +41,37 @@ class User extends Authenticatable
      *
      * @var array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
+    protected $casts = [ 'password' => 'hashed'];
 
-    public function project(){
-        return $this->belongsTo(Project::class, 'project_id', 'id');
+    protected $append = ['RoleName', 'GenderName'];
+
+    # Relationship
+    public function genderType()
+    {
+        return $this->belongsTo(Gender::class, 'gender_id', 'id');
     }
+
+    public function rolesType()
+    {
+        return $this->belongsTo(Roles::class, 'roles_id', 'id');
+    }
+
+    public function task()
+    {
+        return $this->hasMany(Task::class, 'users_id', 'id');
+    }
+
+    # Accessors
+
+    /**
+     * Summary of getRoleNameAttribute
+     * @return mixed
+     */
+    public function getRoleNameAttribute() { return $this->rolesType->name; }
+
+    /**
+     * Summary of getGenderNameAttribute
+     * @return mixed
+     */
+    public function getGenderNameAttribute() { return $this->genderType->name; }
 }

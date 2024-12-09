@@ -2,36 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SendMessageEvent;
 use App\Models\Project;
 use App\Services\rabbitMQServices;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Redis;
 
 class ProjectController extends Controller
 {
+
+    public function listener()
+    {
+        return view('projects');
+    }
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $project = Project::with("users")->get();
+    public function index(){
+        $project = Project::orderBy('id', 'asc')->get(['id','name']);
+
         $rabbitMQServices = new rabbitMQServices();
-        $rabbitMQServices->sendMessages('queue_syahril', $project);
+        $rabbitMQServices->sendMessages('projects_collection', $project);
 
-        if (Redis::get('redis_syahril') === null){
-            Redis::set('redis_syahril', $project, 'EX', 7600);
-            return response()->json([
-                'status' => 200,
-                'message' => 'send redis set',
-                'data' => json_decode(Redis::get('redis_syahril'), true)
-            ], 200);
-        }
-
-        return response()->json([
-                'status' => 200,
-                'message' => 'get by redis',
-                'data' => json_decode(Redis::get('redis_syahril'), true)
-        ], 200);
+        return $project;
     }
 
     /**
@@ -45,10 +39,15 @@ class ProjectController extends Controller
             'date_end' => $request->end
         ]);
 
-        $data = Project::where("id", $project->id)->first();
+        Redis::flushDB();
+
+        $projects = Project::orderBy('id', 'asc')->get(['id', 'name']);
+        $rabbitMQServices = new rabbitMQServices();
+        $rabbitMQServices->sendMessages('projects_collection', $projects);
+
         return response()->json([
-            'id' => $data->id,
-            'name' => $data->name
+            'id' => $project->id,
+            'name' => $project->name
         ], 201);
     }
 
@@ -65,7 +64,23 @@ class ProjectController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        if(Project::find($id) === null)
+        { return response()->json([ 'status' => 404, 'message' => "Projects Not Found" ], 404); }
+        else {
+            Project::where('id', '=', $id)->update([ 'name' => $request->name ]);
+            $project = Project::where('id','=', $id)->first();
+
+            Redis::flushDB();
+
+            $projects = Project::orderBy('id', 'asc')->get(['id', 'name']);
+            $rabbitMQServices = new rabbitMQServices();
+            $rabbitMQServices->sendMessages('projects_collection', $projects);
+
+            return response()->json([
+                'id' => $project->id,
+                'name' => $project->name
+            ], 200);
+        }
     }
 
     /**
@@ -73,6 +88,18 @@ class ProjectController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        if(Project::find($id) === null)
+        { return response()->json([ 'status' => 404, 'message' => "Projects Not Found" ], 404); }
+        else {
+            Project::where('id', '=', $id)->delete();
+
+            Redis::flushDB();
+
+            $projects = Project::orderBy('id', 'asc')->get(['id', 'name']);
+            $rabbitMQServices = new rabbitMQServices();
+            $rabbitMQServices->sendMessages('projects_collection', $projects);
+
+            return $projects;
+        }
     }
 }

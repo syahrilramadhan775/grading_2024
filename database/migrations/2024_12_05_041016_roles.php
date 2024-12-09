@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_project_task', function(Blueprint $table){
-            $table->integer('user_id');
-            $table->integer('project_id');
-            $table->integer('task_id');
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+
+            // ['Developer', 'Project Manager', 'Tester']
+            $table->string('name')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -23,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('roles');
     }
 };

@@ -2,34 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\consumeMessage;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\rabbitMQServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
+use App\Events\SendMessageEvent;
+use App\Models\Gender;
+use App\Models\Roles;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    public function send()
+    private $data;
+
+    public function listener()
     {
-        $user = User::all();
-        $rabbitMQServices = new rabbitMQServices();
-        $rabbitMQServices->sendMessages('queue_syahril', $user);
-
-        if (Redis::get('redis_syahril') === null){
-            Redis::set('redis_syahril', $user, 'EX', 7600);
-            return response()->json([
-                'message' => 'send redis set',
-                'data' => json_decode(Redis::get('redis_syahril'), true)
-            ], 200);
-        }
-
-        // dd(Redis::get('redis_syahril'));
-        return response()->json([
-                'message' => 'get by redis',
-                'data' => json_decode(Redis::get('redis_syahril'), true)
-        ], 200);
+        return view('users');
     }
 
     /**
@@ -37,41 +28,55 @@ class UserController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $users = User::orderBy('id', 'asc')->with(['rolesType', 'genderType'])->get()->map(function ($q) {
+            $this->data['id'] = $q->id;
+            $this->data['username'] = $q->username;
+            $this->data['name'] = $q->name;
+            $this->data['gender'] = $q->genderType->name;
+            $this->data['role'] = $q->rolesType->name;
+            return $this->data;
+        });
 
-    public function userProjectTask(){
-        $user = Project::with('users')->get();
+        $rabbitMQServices = new rabbitMQServices();
+        $rabbitMQServices->sendMessages('users_collection', $users);
 
-        return response()->json([
-            'status' => 200,
-            'data' => $user
-        ], 200);
+        return $users;
     }
 
     /**
      * Store a newly created resource in storage.
-     */
-    public function storeRole(Request $request)
+    */
+    public function store(Request $request)
     {
-        $project = Project::where("name", $request->project)->first();
-        
+        $role = Roles::where('name', '=', Str::title($request->role))->first()->id;
+        $gender = Gender::where('name', '=', Str::title($request->gender))->first()->id;
+
         $user = User::create([
-            'project_id' => $project->id,
+            'username' => $request->username,
+            'password' => Hash::make($request->username.'123'),
             'name' => $request->name,
-            'password' => Hash::make('testPassword123'),
-            'email' => $request->email,
-            'gender' => $request->gender,
-            'role' => $request->role,
+            'roles_id' => $role,
+            'gender_id' => $gender
         ]);
 
-        $rabbitMQServices = new rabbitMQServices();
-        $rabbitMQServices->sendMessages('queue_syahril', $user);
+        $users = User::with(['rolesType', 'genderType'])->get()->map(function ($q) {
+            $this->data['id'] = $q->id;
+            $this->data['username'] = $q->username;
+            $this->data['name'] = $q->name;
+            $this->data['gender'] = $q->genderType->name;
+            $this->data['role'] = $q->rolesType->name;
+            return $this->data;
+        });
 
-        $data = User::where('id', $user->id)->first();
         Redis::flushDB();
 
-        return response()->json($data, 201);
+        $rabbitMQServices = new rabbitMQServices();
+        $rabbitMQServices->sendMessages('users_collection', $users);
+
+        return response()->json([
+            'status' => 201,
+            'data' => $user
+        ], 201);
     }
 
     /**
@@ -87,19 +92,39 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $project = Project::where("name", $request->project)->first();
-        User::where('id', $id)->update([
-            'project_id' => $project->id,
-        ]);
-        
-        $data = User::where("id", $id)->first();
+        if(User::find($id) === null)
+        { return response()->json([ 'status' => 404, 'message' => "Users Not Found" ], 404); }
+        else {
+            $role = Roles::where('name', '=', Str::title($request->role))->first()->id;
 
-        $rabbitMQServices = new rabbitMQServices();
-        $rabbitMQServices->sendMessages('queue_syahril', $data);
+            User::where('id', '=', $id)->update(['roles_id' => $role]);
+            $user = User::where('id','=', $id)->first();
 
-        Redis::flushDB();
+            $users = User::with(['rolesType', 'genderType'])->get()->map(function ($q) {
+                $this->data['id'] = $q->id;
+                $this->data['username'] = $q->username;
+                $this->data['name'] = $q->name;
+                $this->data['gender'] = $q->genderType->name;
+                $this->data['role'] = $q->rolesType->name;
+                return $this->data;
+            });
 
-        return response()->json($data, 200);
+            Redis::flushDB();
+
+            $rabbitMQServices = new rabbitMQServices();
+            $rabbitMQServices->sendMessages('users_collection', $users);
+
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'id' =>  $user->id,
+                    'username' =>  $user->username,
+                    'name' =>  $user->name,
+                    'gender' =>  $user->genderType->name,
+                    'role' =>  $user->rolesType->name
+                ]
+            ], 200);
+        }
     }
 
     /**
@@ -107,6 +132,26 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        //
-    } 
+        if(User::find($id) === null)
+        { return response()->json([ 'status' => 404, 'message' => "Users Not Found" ], 404); }
+        else {
+            User::where('id', '=', $id)->delete();
+
+            Redis::flushDB();
+
+            $users = User::with(['rolesType', 'genderType'])->get()->map(function ($q) {
+                $this->data['id'] = $q->id;
+                $this->data['username'] = $q->username;
+                $this->data['name'] = $q->name;
+                $this->data['gender'] = $q->genderType->name;
+                $this->data['role'] = $q->rolesType->name;
+                return $this->data;
+            });
+
+            $rabbitMQServices = new rabbitMQServices();
+            $rabbitMQServices->sendMessages('users_collection', $users);
+
+            return $users;
+        }
+    }
 }

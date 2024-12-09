@@ -35,7 +35,7 @@ class rabbitMQServices
     {
         $this->channels->queue_declare($queue, false, true, false, false);
 
-        $this->channels->basic_consume($queue, '', false, false, false, false, $callback);
+        $this->channels->basic_consume($queue, '', false, true, false, false, $callback);
 
         while (count($this->channels->callbacks)) {
             $this->channels->wait(null, false, 7600);

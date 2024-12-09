@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('task', function (Blueprint $table) {
-            $table->integer('id', true);
-            $table->integer('project_id');
+        Schema::create('project', function (Blueprint $table) {
+            $table->id();
             $table->string('name');
-            $table->string('status'); //['working', 'open', 'close', 'overdue']
+            $table->timestamp('date_start');
+            $table->timestamp('date_end');
             $table->timestamps();
-
-            $table->foreign('project_id')->references('id')->on('project')->onUpdate("CASCADE")->onDelete("CASCADE");
         });
     }
 
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('project');
     }
 };
