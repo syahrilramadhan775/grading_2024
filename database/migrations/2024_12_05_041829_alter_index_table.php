@@ -29,7 +29,6 @@ return new class extends Migration
         Schema::table('task', function (Blueprint $table) {
             $table->index('project_id', 'task_idx_project_id');
             $table->index('parent_id', 'task_idx_parent_id');
-            // $table->index('parent_id', 'task_idx_sub_parent_id');
             $table->index('users_id', 'task_idx_users_id');
             $table->index('name', 'task_idx_name');
             $table->index('status', 'task_idx_status');

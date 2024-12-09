@@ -16,15 +16,13 @@ class Task extends Model
         'users_id',
         'project_id',
         'parent_id',
-        // 'sub_parent_id',
     ];
+
+    protected $hidden = ['created_at', 'updated_at'];
 
     protected $append = [
         'usersName',
-        'projectName',
-        // 'parentData', 'parentsData',
-        // 'subParentData', 'subParentsData',
-        'childsData','startTime', 'endTime'
+        'projectName'
     ];
 
     # Relationship
@@ -44,22 +42,6 @@ class Task extends Model
         return $this->belongsTo(self::class, 'parent_id', 'id');
     }
 
-    public function child(){
-        return $this->childTask()->with('child');
-    }
-
-    // public function subParentTask(){
-    //     return $this->belongsTo(self::class, 'parent_id', 'id');
-    // }
-
-    // public function subChildTask(){
-    //     return $this->hasMany(self::class, 'sub_parent_id', 'id');
-    // }
-
-    // public function childTask(){
-    //     return $this->belongsTo(self::class, 'sub_parent_id', 'id');
-    // }
-
     # Accessor
     public function getProjectNameAttribute(){
         return $this->projects->name;
@@ -68,23 +50,9 @@ class Task extends Model
     public function getUsersNameAttribute(){
         return $this->users->name;
     }
-    // public function getParentDataAttribute(){
-    //     return $this->where('parent_id', '=', null)->where('name', '=', $this->name)->first();
-    // }
 
-    // public function getParentsDataAttribute(){
-    //     return $this->where('parent_id', '=', null)->get();
-    // }
-
-    // public function getSubParentDataAttribute(){
-    //     return $this->where([['parent_id', '!=', null], ['sub_parent_id', '=', null]])->first();
-    // }
-
-    // public function getSubParentsDataAttribute(){
-    //     return $this->where([['parent_id', '!=', null], ['sub_parent_id', '=', null]])->get();
-    // }
-
-    // public function getChildsDataAttribute(){
-    //     return $this->where([['parent_id', '!=', null], ['sub_parent_id', '!=', null]])->get();
-    // }
+    public function Child()
+    {
+        return $this->childTask()->with('child');
+    }
 }

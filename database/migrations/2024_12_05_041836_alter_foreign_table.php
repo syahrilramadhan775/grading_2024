@@ -19,7 +19,6 @@ return new class extends Migration
         Schema::table('task', function (Blueprint $table) {
             $table->foreign('project_id', 'task_fk_project_id')->references('id')->on('project')->onUpdate('CASCADE')->onDelete('CASCADE');
             $table->foreign('parent_id', 'task_fk_parent_id')->references('id')->on('task')->onUpdate('CASCADE')->onDelete('CASCADE');
-            // $table->foreign('sub_parent_id', 'task_fk_sub_parent_id')->references('id')->on('task')->onUpdate('CASCADE')->onDelete('CASCADE');
             $table->foreign('users_id', 'task_fk_users_id')->references('id')->on('users')->onUpdate('CASCADE')->onDelete('CASCADE');
         });
     }

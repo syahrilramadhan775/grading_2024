@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->bigInteger('project_id')->nullable();
             $table->bigInteger('parent_id')->nullable();
-            // $table->bigInteger('sub_parent_id')->nullable();
             $table->bigInteger('users_id')->nullable();
             $table->string('name');
             $table->string('status'); //['working', 'open', 'close', 'overdue']
